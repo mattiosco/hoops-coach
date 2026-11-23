@@ -93,7 +93,7 @@ export default function Check() {
   const shareCsv = async () => {
     const csv = votesCsv(season)
     if (!csv.includes('\n')) {
-      setNotice('No finished matches to export yet.')
+      setNotice('No finished games to export yet.')
       return
     }
     const how = await deliverFile(`hoops-${slug}-${stamp()}.csv`, 'text/csv', csv)

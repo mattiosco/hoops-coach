@@ -62,27 +62,31 @@ const slot = (id: SlotId, label: string, role: Role, x: number, y: number): Slot
 })
 
 /**
- * One line-up per players-on-court count. Laid out on a half court with the basket at the
- * top, so the map reads the way the team attacks.
+ * One line-up per players-on-court count, drawn in a 2-3 shape: two guards out at the top
+ * of the key, and three "bigs" along the basket — a forward on each side and the centre in
+ * the middle. That is the standard junior set-up, and the same shape as a 2-3 zone defence.
+ *
+ * Laid out on a half court with the basket at the top. Ids stay short (pg, sg…) because
+ * stored games refer to them; only the labels are spelled out.
  */
 export const FORMATIONS: Record<number, Slot[]> = {
   3: [
-    slot('pg', 'Guard', 'Guard', 50, 80),
-    slot('wing', 'Wing', 'Forward', 18, 46),
-    slot('post', 'Post', 'Centre', 70, 26),
+    slot('pg', 'Guard', 'Guard', 50, 76),
+    slot('pf', 'Forward', 'Forward', 24, 32),
+    slot('c', 'Centre', 'Centre', 76, 32),
   ],
   4: [
-    slot('pg', 'Point', 'Guard', 50, 82),
-    slot('sg', 'Wing L', 'Guard', 16, 54),
-    slot('sf', 'Wing R', 'Forward', 84, 54),
-    slot('c', 'Post', 'Centre', 50, 28),
+    slot('pg', 'Point Guard', 'Guard', 28, 74),
+    slot('sg', 'Shooting Guard', 'Guard', 72, 74),
+    slot('pf', 'Forward', 'Forward', 24, 34),
+    slot('c', 'Centre', 'Centre', 76, 34),
   ],
   5: [
-    slot('pg', 'PG', 'Guard', 50, 84),
-    slot('sg', 'SG', 'Guard', 15, 60),
-    slot('sf', 'SF', 'Forward', 85, 60),
-    slot('pf', 'PF', 'Forward', 24, 28),
-    slot('c', 'C', 'Centre', 76, 28),
+    slot('pg', 'Point Guard', 'Guard', 28, 76),
+    slot('sg', 'Shooting Guard', 'Guard', 72, 76),
+    slot('sf', 'Small Forward', 'Forward', 20, 40),
+    slot('pf', 'Power Forward', 'Forward', 80, 40),
+    slot('c', 'Centre', 'Centre', 50, 22),
   ],
 }
 
@@ -91,8 +95,8 @@ export const MAX_ON_COURT = 5
 
 export const FORMATION_NAMES: Record<number, string> = {
   3: '3 on 3',
-  4: '4 on 4',
-  5: '5 on 5',
+  4: '4 on 4 · 2-2',
+  5: '5 on 5 · 2-3',
 }
 
 export function formationFor(count: number): Slot[] {

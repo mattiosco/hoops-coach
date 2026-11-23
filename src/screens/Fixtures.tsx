@@ -32,7 +32,7 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
   /** Fixtures already set up say so, so a saved line-up is never a surprise. */
   const labelFor = (fixtureId: string) => {
     const existing = matchForFixture(season, fixtureId)
-    if (!existing) return 'Set up match'
+    if (!existing) return 'Set up game'
     if (existing.endedAt) return 'Played — view'
     return hasStarted(existing) ? 'Resume game' : 'Continue setting up'
   }
@@ -46,6 +46,7 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
       <h2 style={{ fontSize: 24, marginBottom: 4 }}>Fixtures — {season.name}</h2>
       <p className="muted small" style={{ margin: '0 0 14px', lineHeight: 1.5 }}>
         Copy each game from the PlayHQ draw — opponent, time and court.
+        {!season.playhqUrl && ' Add your PlayHQ link on the Team tab to open the draw from here.'}
       </p>
 
       <div className="inline wrap">
@@ -70,6 +71,16 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
         >
           + Add a game
         </button>
+        {season.playhqUrl && (
+          <a
+            className="btn btn-ghost"
+            href={season.playhqUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open PlayHQ draw ↗
+          </a>
+        )}
       </div>
 
       <div className="stack" style={{ marginTop: 16 }}>

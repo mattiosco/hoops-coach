@@ -40,7 +40,15 @@ body {
     env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-button {
+/* A link that looks and sizes like a button — used for opening PlayHQ. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+button,
+a.btn {
   font: inherit;
   color: inherit;
   min-height: var(--tap);
@@ -51,7 +59,8 @@ button {
   cursor: pointer;
   touch-action: manipulation;
 }
-button:active { transform: scale(0.98); }
+button:active,
+a.btn:active { transform: scale(0.98); }
 
 h1, h2, h3 { margin: 0; line-height: 1.2; }
 
@@ -252,6 +261,7 @@ button:disabled { opacity: 0.4; }
 .magnet .pos {
   font-size: 9px;
   letter-spacing: 0.08em;
+  white-space: nowrap;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;

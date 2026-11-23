@@ -98,6 +98,11 @@ export function configFor(defaults: TeamDefaults): MatchConfig {
 export interface Season {
   id: string
   name: string
+  /**
+   * The team's page on PlayHQ, opened from the Fixtures tab so the draw is one tap away
+   * while copying games in. Empty when not set.
+   */
+  playhqUrl: string
   defaults: TeamDefaults
   players: Player[]
   fixtures: Fixture[]
@@ -121,6 +126,7 @@ export function emptyTeam(name: string): Season {
   return {
     id: crypto.randomUUID(),
     name,
+    playhqUrl: '',
     defaults: { ...TEAM_DEFAULTS },
     players: [],
     fixtures: [],
@@ -155,6 +161,7 @@ export type Action =
   | { type: 'END_MATCH'; id: MatchId; at: number }
   | { type: 'DELETE_MATCH'; id: MatchId }
   | { type: 'SET_TEAM_DEFAULTS'; defaults: TeamDefaults }
+  | { type: 'SET_PLAYHQ_URL'; url: string }
   // App-level: teams and restore.
   | { type: 'LOAD_APP'; app: AppState }
   | { type: 'TEAM_ADD'; name: string }
@@ -258,6 +265,9 @@ export function teamReducer(season: Season, action: Action): Season {
     case 'SET_TEAM_DEFAULTS':
       return { ...season, defaults: action.defaults }
 
+    case 'SET_PLAYHQ_URL':
+      return { ...season, playhqUrl: action.url.trim() }
+
     default:
       return season
   }
@@ -312,6 +322,7 @@ function migrate(app: AppState): AppState {
     ...app,
     teams: app.teams.map((team) => ({
       ...team,
+      playhqUrl: team.playhqUrl ?? '',
       defaults: { ...TEAM_DEFAULTS, ...team.defaults },
     })),
   }

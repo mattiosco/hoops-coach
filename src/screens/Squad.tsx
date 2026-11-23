@@ -2,12 +2,26 @@ import { useState } from 'react'
 import { FORMATION_NAMES, MAX_ON_COURT, MIN_ON_COURT, ROLES } from '../domain/types'
 import { useSeason } from '../state/store'
 import PeriodSettings from '../ui/PeriodSettings'
+import { checkPlayhqUrl } from '../lib/transfer'
 
 export default function Squad() {
   const { app, season, dispatch } = useSeason()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [linkDraft, setLinkDraft] = useState<string | null>(null)
+  const [linkError, setLinkError] = useState<string | null>(null)
+
+  const saveLink = () => {
+    try {
+      const url = checkPlayhqUrl(linkDraft ?? season.playhqUrl)
+      dispatch({ type: 'SET_PLAYHQ_URL', url })
+      setLinkDraft(null)
+      setLinkError(null)
+    } catch (e) {
+      setLinkError(String(e instanceof Error ? e.message : e))
+    }
+  }
 
   const setDefaults = (patch: Partial<typeof season.defaults>) =>
     dispatch({ type: 'SET_TEAM_DEFAULTS', defaults: { ...season.defaults, ...patch } })
@@ -104,6 +118,40 @@ export default function Squad() {
           periodMinutes={season.defaults.periodMinutes}
           onChange={(periods, periodMinutes) => setDefaults({ periods, periodMinutes })}
         />
+        <div className="row stack" style={{ alignItems: 'stretch' }}>
+          <label className="small muted" style={{ lineHeight: 1.5 }}>
+            PlayHQ link — open your team on playhq.com and copy the address. The Fixtures tab
+            then has a button straight to the draw.
+          </label>
+          <input
+            type="url"
+            inputMode="url"
+            value={linkDraft ?? season.playhqUrl}
+            placeholder="https://www.playhq.com/basketball-victoria/org/…"
+            onChange={(e) => setLinkDraft(e.target.value)}
+          />
+          {linkDraft !== null && (
+            <div className="inline">
+              <button className="btn-primary btn-sm grow" onClick={saveLink}>
+                Save link
+              </button>
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() => {
+                  setLinkDraft(null)
+                  setLinkError(null)
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {linkError && (
+            <span className="small" style={{ color: 'var(--amber)' }}>
+              {linkError}
+            </span>
+          )}
+        </div>
         <div className="row small muted" style={{ lineHeight: 1.5 }}>
           Defaults apply to each new game; all of them can still be changed per game at setup
           and mid-game.

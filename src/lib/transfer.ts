@@ -16,6 +16,7 @@ interface TeamShare {
   type: 'hoops-team'
   version: 1
   name: string
+  playhqUrl?: string
   players: { name: string; preferred?: Role[] }[]
   fixtures: Fixture[]
   defaults?: TeamDefaults
@@ -33,6 +34,7 @@ export function teamSharePayload(team: Season): string {
     type: 'hoops-team',
     version: 1,
     name: team.name,
+    playhqUrl: team.playhqUrl,
     players: team.players.map((p) => ({ name: p.name, preferred: p.preferred })),
     fixtures: team.fixtures,
     defaults: team.defaults,
@@ -108,6 +110,7 @@ export function parseImport(text: string): Imported {
   const payload = data as {
     type?: string
     name?: string
+    playhqUrl?: string
     players?: TeamShare['players']
     fixtures?: Fixture[]
     defaults?: TeamDefaults
@@ -117,6 +120,7 @@ export function parseImport(text: string): Imported {
   if (payload.type === 'hoops-team' && Array.isArray(payload.players)) {
     const team: Season = {
       ...emptyTeam(payload.name || 'Shared team'),
+      playhqUrl: payload.playhqUrl ?? '',
       // New ids on import: the players get a fresh identity in this phone's store, which
       // is safe because match history deliberately does not travel with a team share.
       players: payload.players.map(
@@ -164,4 +168,24 @@ export async function deliverFile(
 
 export function stamp(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+/**
+ * Check a pasted PlayHQ link. Only playhq.com addresses are accepted: the link is opened
+ * from the app, so it must not be able to point anywhere else.
+ */
+export function checkPlayhqUrl(raw: string): string {
+  const text = raw.trim()
+  if (!text) return ''
+  let url: URL
+  try {
+    url = new URL(text)
+  } catch {
+    throw new Error('That does not look like a web address')
+  }
+  const host = url.hostname.toLowerCase()
+  if (url.protocol !== 'https:' || !(host === 'playhq.com' || host.endsWith('.playhq.com'))) {
+    throw new Error('Paste a link from playhq.com — your team page or the competition draw')
+  }
+  return url.toString()
 }
