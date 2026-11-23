@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { hasStarted, matchForFixture, useSeason } from '../state/store'
 import type { Fixture } from '../domain/types'
+import PlayhqPaste from '../ui/PlayhqPaste'
 
 export function isUpcoming(fixture: Fixture, now = Date.now()): boolean {
   // A fixture stays "on" for a few hours after tip-off so it does not vanish from the
@@ -28,6 +29,8 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
   const { season, dispatch } = useSeason()
   const [showPast, setShowPast] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [pasting, setPasting] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   /** Fixtures already set up say so, so a saved line-up is never a surprise. */
   const labelFor = (fixtureId: string) => {
@@ -45,13 +48,22 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
     <div className="screen">
       <h2 style={{ fontSize: 24, marginBottom: 4 }}>Fixtures — {season.name}</h2>
       <p className="muted small" style={{ margin: '0 0 14px', lineHeight: 1.5 }}>
-        Copy each game from the PlayHQ draw — opponent, time and court.
+        Paste your team&apos;s draw from PlayHQ, or add games by hand.
         {!season.playhqUrl && ' Add your PlayHQ link on the Team tab to open the draw from here.'}
       </p>
 
       <div className="inline wrap">
         <button
           className="btn-primary"
+          onClick={() => {
+            setPasting(true)
+            setNotice(null)
+          }}
+        >
+          Paste from PlayHQ
+        </button>
+        <button
+          className="btn-ghost"
           onClick={() => {
             const id = crypto.randomUUID()
             const round = `Round ${season.fixtures.length + 1}`
@@ -82,6 +94,25 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
           </a>
         )}
       </div>
+
+      {pasting && (
+        <PlayhqPaste
+          existing={season.fixtures}
+          playhqUrl={season.playhqUrl}
+          onClose={() => setPasting(false)}
+          onSave={(fixtures) => {
+            const added = fixtures.length - season.fixtures.length
+            dispatch({ type: 'SET_FIXTURES', fixtures })
+            setPasting(false)
+            setNotice(added > 0 ? `Added ${added} game${added === 1 ? '' : 's'} from PlayHQ.` : 'Games updated from PlayHQ.')
+          }}
+        />
+      )}
+      {notice && (
+        <p className="small" style={{ color: 'var(--accent)', margin: '12px 0 0' }}>
+          {notice}
+        </p>
+      )}
 
       <div className="stack" style={{ marginTop: 16 }}>
         {shown.map((fixture) =>
@@ -125,8 +156,8 @@ export default function Fixtures({ onPick }: { onPick: (fixture: Fixture) => voi
 
       {shown.length === 0 && (
         <p className="muted small" style={{ marginTop: 20, lineHeight: 1.5 }}>
-          No games yet. Add them from the PlayHQ draw — or skip this and start a practice
-          game from the Game tab.
+          No games yet. Paste them from PlayHQ or add them by hand — or skip this and start
+          a practice game from the Game tab.
         </p>
       )}
 

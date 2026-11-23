@@ -149,6 +149,7 @@ export type Action =
   | { type: 'REMOVE_PLAYER'; id: PlayerId }
   | { type: 'EDIT_FIXTURE'; id: string; patch: Partial<Fixture> }
   | { type: 'ADD_FIXTURE'; fixture: Fixture }
+  | { type: 'SET_FIXTURES'; fixtures: Fixture[] }
   | { type: 'REMOVE_FIXTURE'; id: string }
   | { type: 'START_MATCH'; match: StoredMatch }
   | { type: 'SET_ACTIVE'; id: MatchId | null }
@@ -208,6 +209,9 @@ export function teamReducer(season: Season, action: Action): Season {
           f.id === action.id ? { ...f, ...action.patch } : f,
         ),
       }
+
+    case 'SET_FIXTURES':
+      return { ...season, fixtures: action.fixtures }
 
     case 'ADD_FIXTURE':
       return {
