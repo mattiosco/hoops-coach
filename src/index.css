@@ -1,0 +1,350 @@
+/* Sunlight-readable, thumb-first. Dark ground, high-contrast text, big targets. */
+:root {
+  --bg: #121010;
+  --surface: #1d1a19;
+  --surface-2: #2a2524;
+  --line: #433a37;
+  --text: #f6f3f2;
+  --muted: #b3a7a2;
+  --accent: #e8702a;
+  --accent-dim: #9c4413;
+  --amber: #f2c84b;
+  --red: #d4553f;
+
+  --tap: 56px; /* minimum touch target */
+  --radius: 14px;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-synthesis: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  /* Never bounce or rubber-band: this is an app, not a document. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Respect the notch and the home indicator. */
+#root {
+  padding:
+    env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  min-height: var(--tap);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button:active { transform: scale(0.98); }
+
+h1, h2, h3 { margin: 0; line-height: 1.2; }
+
+/* ---------- layout ---------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 60px;
+}
+.tabs button[aria-current='true'] { color: var(--text); box-shadow: inset 0 2px 0 var(--accent); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card + .card { margin-top: 12px; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.row:last-child { border-bottom: 0; }
+
+.section-title {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 22px 0 8px;
+}
+.section-title:first-child { margin-top: 4px; }
+
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.grow { flex: 1; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.inline { display: flex; gap: 8px; align-items: center; }
+.wrap { flex-wrap: wrap; }
+
+/* ---------- controls ---------- */
+
+input[type='text'], input[type='number'], input[type='datetime-local'], select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: var(--tap);
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a0b02;
+  font-weight: 700;
+}
+.btn-ghost { background: none; }
+.btn-danger { color: var(--red); }
+.btn-sm { min-height: 40px; padding: 0 12px; font-size: 13px; }
+.btn-block { width: 100%; }
+button:disabled { opacity: 0.4; }
+
+/* ---------- game ---------- */
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 62px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1;
+  text-align: center;
+}
+.clock.running { color: var(--text); }
+.clock.paused { color: var(--amber); }
+
+.shift-banner {
+  background: var(--amber);
+  color: #1a1200;
+  font-weight: 800;
+  text-align: center;
+  padding: 12px;
+  border-radius: var(--radius);
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-height: 62px;
+}
+.slot.selected { border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
+.slot.empty { border-style: dashed; color: var(--muted); }
+
+.slot-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.slot-name { font-size: 17px; font-weight: 600; }
+
+.pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pill.behind { background: #3a2318; color: #ffb891; }
+.pill.ahead { background: #1d2f24; color: #8fd6a6; }
+.pill.level { background: var(--surface-2); color: var(--muted); }
+
+.bench-item { composes: slot; }
+
+/* ---------- court map ---------- */
+
+.court {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 15 / 14;
+  background: linear-gradient(#a8693a, #8d5530);
+  border: 2px solid #c7874f;
+  border-radius: 12px;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* Court markings are decoration only: they must never swallow a tap meant for a magnet. */
+.court-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.magnet {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  /* Above the court markings, whatever order they paint in. */
+  z-index: 2;
+  min-width: 86px;
+  max-width: 42%;
+  min-height: 60px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: #161210;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.05;
+}
+.magnet .pos {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.magnet .who {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+/*
+ * The generic button:active rule replaces transform outright, which would drop the
+ * centring translate and make every magnet jump on touch. Re-state both together.
+ */
+.magnet:active { transform: translate(-50%, -50%) scale(0.97); }
+
+.magnet.empty { border-style: dashed; background: rgba(0,0,0,0.35); }
+.magnet.empty .who { color: var(--muted); font-weight: 600; font-size: 15px; }
+.magnet.selected { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber); }
+.magnet.planned { border-color: var(--amber); }
+.magnet .incoming {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--amber);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bench-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.bench-chip {
+  min-height: 54px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 30%;
+}
+.bench-chip .who { font-size: 17px; font-weight: 700; }
+.bench-chip.selected { border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
+.bench-chip.planned { border-color: var(--amber); opacity: 0.65; }
+
+/* Both clocks stay pinned to the top while the rest of the screen scrolls. */
+.clockbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 -16px 10px;
+  padding: 6px 16px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.clockbar .clock { font-size: 46px; text-align: left; }
+.clockbar-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: auto;
+  text-align: right;
+}
+.clockbar-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  font-weight: 700;
+}
+.clockbar-cap {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* A long press must not select the name or pop the OS callout menu. */
+.magnet {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Moving players around rather than subbing: the whole court changes character. */
+.court.shuffling { border-color: var(--amber); }
+.court.shuffling .magnet { border-color: var(--amber); border-style: dashed; }
+.court.shuffling .magnet.selected { border-style: solid; }
