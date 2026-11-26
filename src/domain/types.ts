@@ -38,8 +38,13 @@ export interface MatchConfig {
    * beyond that is extra time added at the end (overtime, or a game that runs on).
    */
   totalMinutes: number
-  /** How often to prompt for a rolling sub. */
+  /** How often to prompt for a rolling sub, in minutes (fractions allowed: 5.75 = 5:45). */
   shiftMinutes: number
+  /**
+   * Whether the interval follows the recommendation worked out from who is here. Off once
+   * the coach sets one by hand. Missing on older games, which counts as on.
+   */
+  autoShift?: boolean
 }
 
 /** A game on the draw. Entered by hand — PlayHQ has no open API to sync from. */

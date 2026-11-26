@@ -19,6 +19,9 @@ import {
   type SlotId,
 } from '../domain/types'
 import { useWakeLock } from '../lib/useWakeLock'
+import { alertBuzzer, alertSubNow, alertSubSoon, unlockAudio } from '../lib/alerts'
+import { recommendShift } from '../domain/shift'
+import SubInterval from '../ui/SubInterval'
 import {
   activeMatch,
   configFor,
@@ -197,7 +200,11 @@ function Live({
   const [, tick] = useState(0)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   // Shift 1 is the opening line-up, so the first prompt is at the end of it, not at tip-off.
-  const [ackedShift, setAckedShift] = useState(1)
+  // Coming back to this screen mid-game starts from the shift in progress, so returning
+  // does not beep for a sub that was already dealt with.
+  const [ackedShift, setAckedShift] = useState(() =>
+    Math.max(1, shiftNumber(currentClock(state, Date.now()), match.config.shiftMinutes)),
+  )
   /** Changes just made, kept on screen while everyone finds their new spot. */
   const [recent, setRecent] = useState<RecentChange[] | null>(null)
   const recentTimer = useRef<number | undefined>(undefined)
@@ -236,7 +243,8 @@ function Live({
       event: { ...event, at: Date.now(), clock: currentClock(state, Date.now()) } as MatchEvent,
     })
 
-  const shift = shiftNumber(clock, match.config.shiftMinutes)
+  const shiftMinutes = match.config.shiftMinutes
+  const shift = shiftNumber(clock, shiftMinutes)
   const shiftDue = running && shift > ackedShift && clock > 0
 
   const suggestions = useMemo(
@@ -245,19 +253,44 @@ function Live({
     [shiftDue, state, shares, planned.length],
   )
 
-  // Buzz once when a shift falls due, so it lands with the phone in a pocket.
-  const buzzed = useRef(0)
-  useEffect(() => {
-    if (shiftDue && buzzed.current !== shift) {
-      buzzed.current = shift
-      navigator.vibrate?.([200, 100, 200])
-    }
-  }, [shiftDue, shift])
-
   const periods = match.config.periods
   const periodLabel = periodName(periods)
   const lastPeriod = state.period >= periods
   const periodEnd = periodEndMs(match.config, state.period)
+
+  const toNextSub = msToNextShift(clock, shiftMinutes)
+  // A sub that would land on (or after) the end of the period is made at the break
+  // instead, so it gets no warning of its own — the period buzzer covers it.
+  const nextSubInPlay = clock + toNextSub < periodEnd - 1000
+  const subSoon = running && nextSubInPlay && toNextSub <= 30_000 && !shiftDue
+
+  // Beep once, 30 seconds out, so the next players can be at the bench ready to go.
+  const warned = useRef(0)
+  useEffect(() => {
+    if (subSoon && warned.current !== shift + 1) {
+      warned.current = shift + 1
+      alertSubSoon()
+    }
+  }, [subSoon, shift])
+
+  // And again when the sub falls due.
+  const buzzed = useRef(0)
+  useEffect(() => {
+    if (shiftDue && buzzed.current !== shift) {
+      buzzed.current = shift
+      alertSubNow()
+    }
+  }, [shiftDue, shift])
+
+  /** Who would come on at the next sub, shown during the 30-second warning. */
+  const upcoming = useMemo(
+    () =>
+      subSoon && planned.length === 0
+        ? suggestSubs(season.players, state, shares, clock + toNextSub)
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [subSoon, state, shares, planned.length],
+  )
 
   /**
    * Stop the clock on our own at the end of each period, and at full time.
@@ -279,13 +312,35 @@ function Live({
         ? { t: 'CLOCK_PAUSE', at: Date.now(), clock: periodEnd }
         : { t: 'PERIOD_END', at: Date.now(), clock: periodEnd },
     })
-    navigator.vibrate?.([300, 120, 300])
-  }, [running, clock, periodEnd, lastPeriod, match.id, dispatch])
+    // Subs are made during the break, so a shift that falls due at the boundary is
+    // treated as done rather than prompting again the moment play resumes.
+    setAckedShift(shiftNumber(periodEnd, shiftMinutes))
+    alertBuzzer()
+  }, [running, clock, periodEnd, lastPeriod, shiftMinutes, match.id, dispatch])
 
   /** Close the current period at this clock reading, ahead of its scheduled end. */
   const endPeriodNow = () => {
     autoStopped.current.add(periodEnd)
+    setAckedShift(shiftNumber(clock, shiftMinutes))
     append({ t: 'PERIOD_END' })
+  }
+
+  const availableNow = season.players.filter((p) => state.availability[p.id] === 'available').length
+  const recommended = recommendShift({
+    available: availableNow,
+    onCourt: state.slots.length,
+    totalMinutes: match.config.totalMinutes,
+    periodMinutes: match.config.periodMinutes,
+  })
+
+  /** Change the interval mid-game without firing a prompt for shifts already gone by. */
+  const setShift = (minutes: number, auto: boolean) => {
+    dispatch({
+      type: 'SET_CONFIG',
+      id: match.id,
+      config: { ...match.config, shiftMinutes: minutes, autoShift: auto },
+    })
+    setAckedShift(shiftNumber(clock, minutes))
   }
 
   /** Between periods: the previous one has finished and the clock has not restarted. */
@@ -442,9 +497,9 @@ function Live({
           </div>
           <div>
             <span className="clockbar-num" style={{ color: 'var(--amber)' }}>
-              {formatClock(msToNextShift(clock, match.config.shiftMinutes))}
+              {nextSubInPlay ? formatClock(toNextSub) : 'break'}
             </span>
-            <span className="clockbar-cap">to sub</span>
+            <span className="clockbar-cap">{nextSubInPlay ? 'to sub' : 'next sub'}</span>
           </div>
         </div>
       </div>
@@ -453,7 +508,11 @@ function Live({
         <button
           className={running ? '' : 'btn-primary'}
           style={{ flex: 2, minHeight: 60, fontSize: 18, fontWeight: 700 }}
-          onClick={() => append({ t: running ? 'CLOCK_PAUSE' : 'CLOCK_START' })}
+          onClick={() => {
+            // A tap is the moment the tablet allows sound, so the alerts can beep later.
+            unlockAudio()
+            append({ t: running ? 'CLOCK_PAUSE' : 'CLOCK_START' })
+          }}
         >
           {running ? 'Pause' : clock === 0 ? 'Start' : 'Resume'}
         </button>
@@ -498,6 +557,36 @@ function Live({
           <p className="muted small" style={{ margin: 0, lineHeight: 1.5 }}>
             Tied, or the clock ran late? Add time, then press Resume.
           </p>
+        </div>
+      )}
+
+      {subSoon && (
+        <div className="stack" style={{ marginBottom: 12 }}>
+          <div className="shift-banner soon">
+            SUB IN {formatClock(toNextSub)} — get the next players ready
+          </div>
+          {upcoming.length > 0 && (
+            <div className="card">
+              {upcoming.map((s) => (
+                <div className="row small" key={s.slotId}>
+                  <span className="grow">
+                    <strong>{nameOf(s.on)}</strong> on for {nameOf(s.off)}
+                  </span>
+                  <span className="muted">{state.slots.find((x) => x.id === s.slotId)?.label}</span>
+                </div>
+              ))}
+              <div className="row">
+                <button
+                  className="btn-primary grow"
+                  onClick={() =>
+                    setPlanned(upcoming.map((s) => ({ slotId: s.slotId, off: s.off, on: s.on })))
+                  }
+                >
+                  Plan these {upcoming.length}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -767,6 +856,15 @@ function Live({
             </button>
           </div>
         </div>
+        <SubInterval
+          minutes={shiftMinutes}
+          // Mid-game the interval is fixed from tip-off — moving it on its own would jump the
+          // sub clock. A late arrival changes the recommendation, offered as a one-tap Use.
+          auto={Math.abs(shiftMinutes - recommended.shiftMinutes) < 0.01}
+          plan={recommended}
+          available={availableNow}
+          onChange={setShift}
+        />
         <PeriodSettings
           periods={periods}
           periodMinutes={match.config.periodMinutes}

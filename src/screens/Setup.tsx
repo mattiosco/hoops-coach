@@ -15,6 +15,8 @@ import {
 import { dayContextFor, useSeason, type SetupDraft, type StoredMatch } from '../state/store'
 import CourtMap from '../ui/CourtMap'
 import PeriodSettings, { describeFormat, reshape } from '../ui/PeriodSettings'
+import SubInterval from '../ui/SubInterval'
+import { formatMinutes, recommendShift } from '../domain/shift'
 
 const emptyDraft = (slots: Slot[]): SetupDraft => ({
   absent: [],
@@ -104,6 +106,17 @@ export default function Setup({ match, onLeave }: { match: StoredMatch; onLeave:
     setPicking(null)
   }
 
+  // How often to sub, from who is actually here. Follows the squad as players are ticked
+  // in and out, until the coach sets it by hand.
+  const plan = recommendShift({
+    available: present.length,
+    onCourt: slots.length,
+    totalMinutes: match.config.totalMinutes,
+    periodMinutes: match.config.periodMinutes,
+  })
+  const autoShift = match.config.autoShift !== false
+  const shiftMinutes = autoShift ? plan.shiftMinutes : match.config.shiftMinutes
+
   const start = () => {
     const assignments = { ...draft.assignments }
     const availability = Object.fromEntries(
@@ -112,7 +125,13 @@ export default function Setup({ match, onLeave }: { match: StoredMatch; onLeave:
 
     dispatch({
       type: 'START_MATCH',
-      match: { ...match, init: { slots, availability }, events: [] },
+      // The interval is settled at tip-off, so it does not move under the game's feet.
+      match: {
+        ...match,
+        config: { ...match.config, shiftMinutes, autoShift },
+        init: { slots, availability },
+        events: [],
+      },
     })
     const event: MatchEvent = { t: 'LINEUP', at: Date.now(), clock: 0, slots, assignments }
     dispatch({ type: 'APPEND', id: match.id, event })
@@ -145,7 +164,7 @@ export default function Setup({ match, onLeave }: { match: StoredMatch; onLeave:
         </p>
       )}
       <p className="muted small" style={{ margin: '0 0 14px' }}>
-        {describeFormat(match.config)} · sub every {match.config.shiftMinutes} min
+        {describeFormat(match.config)} · sub every {formatMinutes(shiftMinutes)}
       </p>
 
       <CourtMap
@@ -311,6 +330,19 @@ export default function Setup({ match, onLeave }: { match: StoredMatch; onLeave:
             </button>
           </div>
         </div>
+        <SubInterval
+          minutes={shiftMinutes}
+          auto={autoShift}
+          plan={plan}
+          available={present.length}
+          onChange={(minutes, auto) =>
+            dispatch({
+              type: 'SET_CONFIG',
+              id: match.id,
+              config: { ...match.config, shiftMinutes: minutes, autoShift: auto },
+            })
+          }
+        />
         <PeriodSettings
           periods={match.config.periods}
           periodMinutes={match.config.periodMinutes}

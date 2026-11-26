@@ -170,6 +170,12 @@ button:disabled { opacity: 0.4; }
 .clock.running { color: var(--text); }
 .clock.paused { color: var(--amber); }
 
+.shift-banner.soon {
+  background: var(--surface-2);
+  color: var(--amber);
+  border: 2px solid var(--amber);
+}
+
 .shift-banner {
   background: var(--amber);
   color: #1a1200;
